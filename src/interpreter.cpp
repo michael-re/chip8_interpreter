@@ -12,7 +12,7 @@ interpreter_8::Interpreter::Interpreter(const char* title, const char* rom, int 
     int width = Chip8::video::WIDTH;
     int height = Chip8::video::HEIGHT;
 
-    // The number of bytes in a row of pixel datas, including padding between lines
+    // The number of bytes in a row of pixel data, including padding between lines
     m_videoPitch = sizeof(m_chip8->graphicsBuffer()[0]) * Chip8::video::WIDTH;
     m_scale = (scale < 40 ? scale : 40);
     m_cycleDelay = delay;

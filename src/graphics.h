@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <unordered_map>
 
-// #include <SDL.h>
-// #undef main // SDL main 
 class SDL_Window;
 class SDL_Texture;
 class SDL_Renderer;

@@ -2,15 +2,14 @@
 
 #include <chrono>
 #include <format>
-#include <cstring>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <functional>
 
 // Toggle to print debug values to console
-//#define DEBUG_SHOW_MSG
-//#define DEBUG_SHOW_DUMP
+// #define DEBUG_SHOW_MSG
+// #define DEBUG_SHOW_DUMP
 
 // Macros to make life easier
 #define Vx ((m_opcode & 0x0F00u) >> 8u)
@@ -48,35 +47,10 @@ bool interpreter_8::Chip8::Init() {
     m_soundTimer = address::DEFAULT;
 
     // Clear memory, keypad, graphics, and program stack
-    memset(m_memory, address::DEFAULT, sizeof(m_memory));
-    memset(m_keypad, address::DEFAULT, sizeof(m_keypad));
-    memset(m_graphics, address::DEFAULT, sizeof(m_graphics));
-    memset(m_programStack, address::DEFAULT, sizeof(m_programStack));
-
-    // Check to ensure data was properly cleared
-    for (unsigned int i = 0; i < video::RESOLUTION; i++) {
-        if (m_graphics[i] != DEFAULT) {
-            return error("Error: Failed to clear graphics buffer.");
-        }
-    }
-
-    for (unsigned int i = 0; i < size::KEYPAD; i++) {
-        if (m_keypad[i] != DEFAULT) {
-            return error("Error: Failed to clear keypad.");
-        }
-    }
-
-    for (unsigned int i = 0; i < size::MEMORY; i++) {
-        if (m_memory[i] != DEFAULT) {
-            return error("Error: Failed to clear memory.");
-        }
-    }
-
-    for (unsigned int i = 0; i < size::STACK; i++) {
-        if (m_programStack[i] != DEFAULT) {
-            return error("Error: Failed to clear program stack.");
-        }
-    }
+    std::fill_n(m_memory, MEMORY, address::DEFAULT);
+    std::fill_n(m_keypad, KEYPAD, address::DEFAULT);
+    std::fill_n(m_programStack, STACK, address::DEFAULT);
+    std::fill_n(m_graphics, RESOLUTION, address::DEFAULT);
 
     // Load fontset into memory
     loadFonts();
@@ -86,19 +60,13 @@ bool interpreter_8::Chip8::Init() {
 }
 
 bool interpreter_8::Chip8::LoadROM(const char* filename) {
-    // Trying to load new ROM file --> re-initialize interpreter
-    if (m_romFlag) {
-        return error("Error: trying to load in new ROM file without re-initializing interpreter.");
-    }
-
-    // Check if emulator has been initalized before trying to load ROM file
-    if (!m_initialized) {
-        return error("Error: trying to load ROM file without initializing interpreter.");
+    // Check if emulator has been properly initalized before trying to load ROM file
+    if (m_romFlag || !m_initialized) {
+        return error("Error: trying to load in ROM file without (re-)initializing interpreter.");
     }
 
     // Open ROM file
     std::ifstream rom(filename, std::ios::binary | std::ios::ate);
-    
     if (!rom.is_open()) {
         return error("Error: failed to open ROM file.");
     }
@@ -123,7 +91,7 @@ void interpreter_8::Chip8::RunCycle() {
     // Fetch
     m_opcode = (m_memory[m_programCounter] << 8u) | m_memory[m_programCounter + 1];
 
-    // Increment program counter by two before executing anything. Putting the increment here means it will not need to be in the opcodes.
+    // Increment program counter by two before executing anything to avoid putting it in opcodes.
     m_programCounter += 2;
 
     // Decode and Execute
@@ -393,7 +361,7 @@ void interpreter_8::Chip8::debug_dump() {
  */
 
 void interpreter_8::Chip8::op_00E0() {
-    memset(m_graphics, 0, sizeof(m_graphics));
+    std::fill_n(m_graphics, RESOLUTION, address::DEFAULT);
 }
 
 void interpreter_8::Chip8::op_00EE() {
@@ -529,17 +497,13 @@ void interpreter_8::Chip8::op_Dxyn() {
 }
 
 void interpreter_8::Chip8::op_Ex9E() {
-    uint8_t key = reg_Vx;
-
     // If the value of key is currently pressed, skip next instruction
-    if (m_keypad[key]) m_programCounter += 2;
+    if (m_keypad[reg_Vx]) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_ExA1() {
-    uint8_t key = reg_Vx;
-
     // If the value of key is not currently pressed, skip current instruction
-    if (!m_keypad[key]) m_programCounter += 2;
+    if (!m_keypad[reg_Vx]) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_Fx07() {

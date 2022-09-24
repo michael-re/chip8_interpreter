@@ -10,16 +10,16 @@ namespace interpreter_8 {
         enum video : unsigned int { WIDTH = 64u, HEIGHT = 32u, RESOLUTION = WIDTH * HEIGHT };
 
     private:
-        enum font    : unsigned int { SIZE = 80u, OFFSET = 5u };
-        enum size    : unsigned int { STACK = 16u, KEYPAD = 16u, REGISTER = 16u, MEMORY = 4096u };
-        enum address : unsigned int { VF = 0x000Fu, DEFAULT = 0x0000u, START = 0x0200u, FONT_START = 0x0050u };
-
+        enum font  : unsigned int { SIZE = 80u, OFFSET = 5u };
+        enum size  : unsigned int { STACK = 16u, KEYPAD = 16u, REGISTER = 16u, MEMORY = 4096u };
+        enum value : unsigned int { VF = 0x0Fu, DEFAULT = 0x00u, START = 0x200u, FONT_START = 0x050u };
+    
         /**
          * @brief Fontset will occupy addresses in memory from 0x0050u to 0x00A0u (but anywhere in the first 512 bytes is fine).
          * All assets in the fontset are 4 pixels wide and 5 pixels tall. Once a ROM is loaded, it will be looking for these
          * assets. This will have to be loaded in manually during the initialization of the interpreter.
          */
-        static constexpr uint8_t FONTSET[font::SIZE] = {
+        const uint8_t FONTSET[SIZE] = {
             0xF0, 0x90, 0x90, 0x90, 0xF0,    // 0
             0x20, 0x60, 0x20, 0x20, 0x70,    // 1
             0xF0, 0x10, 0xF0, 0x80, 0xF0,    // 2
@@ -64,13 +64,13 @@ namespace interpreter_8 {
           *      |         +---+---+---+---+        |        +---+---+---+---+           |
           *      +----------------------------------+------------------------------------+
           */
-        uint8_t m_keypad[size::KEYPAD] = { };
+        uint8_t m_keypad[KEYPAD] = { DEFAULT };
 
         /**
          * A 32-bit memory buffer stores graphics to display. The display resolution is 64 pixels wide and 32 pixels high.
          * Each pixel can have two states: on or off. Thus, only white and black can be displayed to the screen.
          */
-        uint32_t m_graphics[video::RESOLUTION] = { };
+        uint32_t m_graphics[RESOLUTION] = { DEFAULT };
 
         /**
          * +--------------------------------------------------------------------------------------------------------------------------+
@@ -90,7 +90,7 @@ namespace interpreter_8 {
           *      - Segment 3: 0x200 - 0xFFF
           *           * The instructions from the ROM will be loaded in this segment starting at address 0x200.
           */
-        uint8_t m_memory[size::MEMORY] = { };
+        uint8_t m_memory[MEMORY] = { DEFAULT };
 
         /**
          * @brief Registers are dedicated location on the CPU for storage. Since the operations done by the CPU are carried out
@@ -101,19 +101,19 @@ namespace interpreter_8 {
          *      - Range of values : 0x00 - 0xFF
          *      - Register VF     : flag to store the information about the result of operation
          */
-        uint8_t m_registers[size::REGISTER] = { };
+        uint8_t m_registers[REGISTER] = { DEFAULT };
 
         /**
          * @brief The index Register is used to store the memory addresses for use in current operation. It's 16-bits because it must
          * holds values between 0x0000u and 0x0FFFu.
          */
-        uint16_t m_indexRegister;
+        uint16_t m_indexRegister = DEFAULT;
 
         /**
          * @brief The program counter holds the address of the next instruction to execute. It's 16-bits because it must holds values
          * between 0x0000u and 0x0FFFu.
          */
-        uint16_t m_programCounter;
+        uint16_t m_programCounter = DEFAULT;
 
         /**
          * @brief A 16-level stack is used to keep track of the order of executions when opcodes are called that allows the program
@@ -121,7 +121,7 @@ namespace interpreter_8 {
          * was executed. The RETURN statement pulls that address from the stack and puts it back into the program counter so the CPU can
          * execute it during the next cycle. Since the program stack has 16 levels, it can hold up to 16 different program counters.
          */
-        uint16_t m_programStack[size::STACK] = { };
+        uint16_t m_programStack[STACK] = { DEFAULT };
 
         /**
          * @brief With the program stack represented as a fixed size array (with 16 elements), we'll need a way to store the location of the most
@@ -130,7 +130,7 @@ namespace interpreter_8 {
          * stack pointer will be decremented by 1 so it points to the previous value in the stack. When a value is pushed to the stack, the program
          * counter will be incremented by 1, and overwrite whatever value is written at the current location.
          */
-        uint8_t m_stackPointer;
+        uint8_t m_stackPointer = DEFAULT;
 
         /**
          * @brief The timer used by CHIP-8 has a simple function: If the value in the timer is 0, it stays 0. If it was loaded with a value,
@@ -140,26 +140,26 @@ namespace interpreter_8 {
          * Two, you can calculate the delta time (elapsed time) between the last and current cycle. If delta time is greater than the cycle delay -
          * run a new cycle. While the second method is a bit more complex, its going to yield a more consistent result than calling thread sleep.
          */
-        uint8_t m_delayTimer;
+        uint8_t m_delayTimer = DEFAULT;
 
         /**
          * @brief The sound timer works similarly to the delay timer. However, when the sound timer is not zero, a single tone will buzz.
          * This interpreter will not implement this feature. - TODO: implement at a later time??
          */
-        uint8_t m_soundTimer;
+        uint8_t m_soundTimer = DEFAULT;
 
         /**
          * @brief An opcode is two bytes, since the memory is addressed as a single byte, when it comes time to fetch an instruction from memory, a byte
          * has to be fetched form the (program counter) and another from (program counter + 1). The two values will then need to be connected into a single
          * value. The program counter will have to be incremented by 2 since it is incremented by 1 before an instruction is executed.
          */
-        uint16_t m_opcode;
+        uint16_t m_opcode = DEFAULT;
 
         // Internal flag determines if interpreter has been initalized. For cycle to run, initialization must be successful.
-        bool m_initialized;
+        bool m_initialized = false;
 
         // Internal flag determines if ROM was successfully loaded. For cycle to run, a valid rom must loaded into memory.
-        bool m_romFlag;
+        bool m_romFlag = false;
 
         /**
          * @brief CHIP-8 has an instruction that places a random number into a register (Cxkk). This interpreter will use
@@ -197,10 +197,7 @@ namespace interpreter_8 {
          */
         void RunCycle();
 
-        // @brief returns keypad
         uint8_t* keyBuffer() { return m_keypad; }
-
-        // @brief returns graphics buffer
         uint32_t* graphicsBuffer() { return m_graphics; }
 
     private:
@@ -215,7 +212,7 @@ namespace interpreter_8 {
          /**
           * @brief Decodes opcode (instruction) and executes the operation. Since CHIP-8 has a relatively small set of opcodes to
           * implement, emulate simply uses a switch statement to decode and execute the current opcode. For more complex systems,
-          * a more scalable solution is to use function pointer tables.
+          * that have more opcode, function pointer tables offer a more scalable solution.
           */
         void emulate();
 
@@ -231,7 +228,7 @@ namespace interpreter_8 {
         // @brief prints debug msg to console, used to print current opcode
         void debug_msg(const char* msg);
 
-        // @brief dumps info stored
+        // @brief dumps value store in all variables
         void debug_dump();
 
     private:

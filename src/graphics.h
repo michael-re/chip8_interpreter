@@ -17,16 +17,6 @@ namespace interpreter_8 {
         // keymap for chip8 - TODO: implement feature to allow user to remap keys from default
         std::unordered_map<int32_t, int> m_keymap;
 
-        // @brief returns if the given key is part of control
-        inline bool valid(const int32_t& key) {
-            return m_keymap.find(key) != m_keymap.end();
-        }
-
-        // @brief returns index of given key
-        inline int index(const int32_t& key) {
-            return valid(key) ? m_keymap.at(key) : -1;
-        }
-
     public:
         Graphics();
         ~Graphics();
@@ -58,8 +48,5 @@ namespace interpreter_8 {
          * @return true - if user wants to keep running the program, false otherwise
          */
         bool HandleInput(uint8_t* keys);
-
-        // @brief Free window, renderer, and texture
-        void CleanResources();
     };
 }

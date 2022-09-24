@@ -1,7 +1,7 @@
 #include "chip8.h"
 
+// #include <format> // uncomment for debug dump or if compiling with c++20
 #include <chrono>
-#include <format>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
@@ -14,45 +14,34 @@
 // Macros to make life easier
 #define Vx ((m_opcode & 0x0F00u) >> 8u)
 #define Vy ((m_opcode & 0x00F0u) >> 4u)
-#define addr_nnn (m_opcode & 0x0FFFu) 
+#define addr_nnn (m_opcode & 0x0FFFu)
 #define byte_kk (m_opcode & 0x00FFu)
 #define reg_Vx m_registers[Vx]
 #define reg_Vy m_registers[Vy]
-#define reg_VF m_registers[address::VF]
+#define reg_VF m_registers[VF]
 
 interpreter_8::Chip8::Chip8() :
-    m_randomEngine(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count())),
-    m_indexRegister(address::DEFAULT),
-    m_programCounter(address::DEFAULT),
-    m_stackPointer(address::DEFAULT),
-    m_delayTimer(address::DEFAULT),
-    m_soundTimer(address::DEFAULT),
-    m_opcode(address::DEFAULT),
-    m_initialized(false),
-    m_romFlag(false)
+    m_randomEngine(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()))
 { }
 
 bool interpreter_8::Chip8::Init() {
     // Initialize flag - calling Init more than once
     m_initialized = false;
 
-    // Reset key components
-    m_programCounter = address::START;
-    m_indexRegister = address::DEFAULT;
-    m_stackPointer = address::DEFAULT;
-    m_opcode = address::DEFAULT;
-
-    // Reset timers
-    m_delayTimer = address::DEFAULT;
-    m_soundTimer = address::DEFAULT;
+    // Initialize key components 
+    m_programCounter = START;
+    m_indexRegister = DEFAULT;
+    m_stackPointer = DEFAULT;
+    m_delayTimer = DEFAULT;
+    m_soundTimer = DEFAULT;
+    m_opcode = DEFAULT;
 
     // Clear memory, keypad, graphics, and program stack
-    std::fill_n(m_memory, MEMORY, address::DEFAULT);
-    std::fill_n(m_keypad, KEYPAD, address::DEFAULT);
-    std::fill_n(m_programStack, STACK, address::DEFAULT);
-    std::fill_n(m_graphics, RESOLUTION, address::DEFAULT);
+    std::fill_n(m_memory, MEMORY, DEFAULT);
+    std::fill_n(m_keypad, KEYPAD, DEFAULT);
+    std::fill_n(m_programStack, STACK, DEFAULT);
+    std::fill_n(m_graphics, RESOLUTION, DEFAULT);
 
-    // Load fontset into memory
     loadFonts();
 
     // Initialization was successful
@@ -61,26 +50,19 @@ bool interpreter_8::Chip8::Init() {
 
 bool interpreter_8::Chip8::LoadROM(const char* filename) {
     // Check if emulator has been properly initalized before trying to load ROM file
-    if (m_romFlag || !m_initialized) {
-        return error("Error: trying to load in ROM file without (re-)initializing interpreter.");
-    }
+    if (m_romFlag || !m_initialized) return error("Error: can't load ROM file without (re-)initializing interpreter.");
 
     // Open ROM file
     std::ifstream rom(filename, std::ios::binary | std::ios::ate);
-    if (!rom.is_open()) {
-        return error("Error: failed to open ROM file.");
-    }
+    if (!rom.is_open()) return error("Error: failed to open ROM file.");
 
     // Check if ROM will fit in memory
     std::streampos romSize = rom.tellg();
-
-    if (romSize > (size::MEMORY - address::START)) {
-        return error("Error: ROM size is too large to fit into memory.");
-    }
+    if (romSize > (MEMORY - START)) return error("Error: ROM size is too large to fit into memory.");
 
     // Load rom into memory
     rom.seekg(0, std::ios::beg);
-    rom.read((char*)(m_memory + address::START), romSize);
+    rom.read((char*)(m_memory + START), romSize);
     rom.close();
 
     // Successfully loaded ROM into memory
@@ -285,7 +267,7 @@ void interpreter_8::Chip8::emulate() {
 }
 
 void interpreter_8::Chip8::loadFonts() {
-    for (unsigned int i = 0u; i < font::SIZE; i++) {
+    for (unsigned int i = 0u; i < SIZE; i++) {
         m_memory[FONT_START + i] = FONTSET[i];
     }
 }
@@ -327,19 +309,19 @@ void interpreter_8::Chip8::debug_dump() {
 
         // Dump register
         cerr << "\nRegister Dump: \n";
-        for (int i = 0; i < size::REGISTER; i++) {
+        for (int i = 0; i < REGISTER; i++) {
             cerr << printLabel("Register", "V", i) << printHex("0x", m_registers[i], '0') << endl;
         }
 
         // Dump stack
         cerr << "\nStack Dump: \n";
-        for (int i = 0; i < size::STACK; i++) {
+        for (int i = 0; i < STACK; i++) {
             cerr << printLabel("Stack", "0x", i) << printHex("0x", m_programStack[i], '0') << endl;
         }
 
         // Dump memory
         cerr << "\nMemory Dump:\n";
-        for (int i = 0, j = 0; i < size::MEMORY; i++, j++) {
+        for (int i = 0, j = 0; i < MEMORY; i++, j++) {
             printHex(" ", i, '0');              // Print memory index
             printHex(": 0x", m_memory[i], '0'); // Print value
             cerr << ", " << (j == 8 ? "\n" : "");
@@ -361,17 +343,16 @@ void interpreter_8::Chip8::debug_dump() {
  */
 
 void interpreter_8::Chip8::op_00E0() {
-    std::fill_n(m_graphics, RESOLUTION, address::DEFAULT);
+    std::fill_n(m_graphics, RESOLUTION, DEFAULT);
 }
 
 void interpreter_8::Chip8::op_00EE() {
     // Top of stack has address of one instruction past the one that called the subroutine.
-    // To return from subroutine, put previous address into program counter.
     m_programCounter = m_programStack[--m_stackPointer];
 }
 
 void interpreter_8::Chip8::op_1nnn() {
-    // Call routine at location nnn given opcode 1nnn. Jump does NOT remember its origin, no stack interaction required.
+    // Jump does NOT remember its origin, no stack interaction required.
     m_programCounter = addr_nnn; 
 }
 
@@ -381,53 +362,50 @@ void interpreter_8::Chip8::op_2nnn() {
 }
 
 void interpreter_8::Chip8::op_3xkk() {
-    // Compare register Vx with kk (byte): if they are equal, increment program counter by 2
     if (reg_Vx == byte_kk) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_4xkk() {
-    // Compare register Vx with kk (byte): if they are NOT equal, increment program counter by 2
     if (reg_Vx != byte_kk) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_5xy0() {
-    // Compare register Vx with register Vy: if they are equal, increment program counter by 2
     if (reg_Vx == reg_Vy) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_6xkk() {
-    reg_Vx = byte_kk; // Store the value of kk in Vx
+    reg_Vx = byte_kk;
 }
 
 void interpreter_8::Chip8::op_7xkk() {
-    reg_Vx += byte_kk; // Add kk to register Vx
+    reg_Vx += byte_kk;
 }
 
 void interpreter_8::Chip8::op_8xy0() {
-    reg_Vx = reg_Vy; // Store the value of Vy in Vx
+    reg_Vx = reg_Vy;
 }
 
 void interpreter_8::Chip8::op_8xy1() {
-    reg_Vx |= reg_Vy; // Perform bitwise OR on values of Vx and Vy, store the result in Vx
+    reg_Vx |= reg_Vy;
 }
 
 void interpreter_8::Chip8::op_8xy2() {
-    reg_Vx &= reg_Vy; // Perform bitwise AND on values of Vx and Vy, store the result in Vx
+    reg_Vx &= reg_Vy;
 }
 
 void interpreter_8::Chip8::op_8xy3() {
-    reg_Vx ^= reg_Vy; // Perform bitwise XOR on values of Vx and Vy, store the result in Vx
+    reg_Vx ^= reg_Vy;
 }
 
 void interpreter_8::Chip8::op_8xy4() {
     uint16_t sum = reg_Vx + reg_Vy;
-    reg_VF = sum > 255u ? 1u : 0u; // If the the sum is greater than 255 (8 bits), VF is set to 1, other 0 (bot borrow).
-    reg_Vx = sum & 0xFFu;          // Keep lowest 8 bits of the result and store in Vx
+    reg_VF = sum > 255u ? 1u : 0u;
+    reg_Vx = sum & 0xFFu; // Keep lowest 8 bits of the result and store in Vx
 }
 
 void interpreter_8::Chip8::op_8xy5() {
-    reg_VF = reg_Vx > reg_Vy ? 1u : 0u; // If Vx is greater than Vy, VF is set to 1, otherwise it is set to 0 (not borrow).
-    reg_Vx -= reg_Vy;                   // Subtract Vy from Vx and store the result in Vx
+    reg_VF = reg_Vx > reg_Vy ? 1u : 0u;
+    reg_Vx -= reg_Vy;
 }
 
 void interpreter_8::Chip8::op_8xy6() {
@@ -436,8 +414,8 @@ void interpreter_8::Chip8::op_8xy6() {
 }
 
 void interpreter_8::Chip8::op_8xy7() {
-    reg_VF = reg_Vy > reg_Vx ? 1u : 0u; // If Vy is greater than Vx, VF is set to 1, otherwise it is set to 0 (not borrow).
-    reg_Vx = reg_Vy - reg_Vx;           // Subtract Vx from Vy and store the value in Vx
+    reg_VF = reg_Vy > reg_Vx ? 1u : 0u;
+    reg_Vx = reg_Vy - reg_Vx;
 }
 
 void interpreter_8::Chip8::op_8xyE() {
@@ -446,45 +424,38 @@ void interpreter_8::Chip8::op_8xyE() {
 }
 
 void interpreter_8::Chip8::op_9xy0() {
-    // Compare register Vx with register Vy: if they are not equal, increment program counter by 2
     if (reg_Vx != reg_Vy) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_Annn() {
-    m_indexRegister = addr_nnn; // Set index register to nnn
+    m_indexRegister = addr_nnn;
 }
 
 void interpreter_8::Chip8::op_Bnnn() {
-    m_programCounter = m_registers[0] + addr_nnn; // Set program counter to V0 + nnn
+    m_programCounter = m_registers[0] + addr_nnn;
 }
 
 void interpreter_8::Chip8::op_Cxkk() {
-    // Set Vx to random number between 0 and 255 ANDed with kk
     auto randomByte = std::bind(std::uniform_int_distribution<unsigned int>(0u, 255u), m_randomEngine);
     reg_Vx = randomByte() & byte_kk;
 }
 
 void interpreter_8::Chip8::op_Dxyn() {
-    // Conflict about sprite behavior when it reaches the screens edge. Some prefer the 
-    // sprite being clipped and others the sprite wrapping. personally, I prefers the
-    // sprites wrapping when they reach the screen edge. 
-    uint8_t x = reg_Vx % video::WIDTH;
-    uint8_t y = reg_Vy % video::HEIGHT;
+    // Conflict about sprite behavior when it reaches the screens edge. Some prefer the sprite being clipped and  
+    // others the sprite wrapping. personally, I prefers the sprites wrapping when they reach the screen edge.
+    uint8_t x = reg_Vx % WIDTH;
+    uint8_t y = reg_Vy % HEIGHT;
     uint8_t height = m_opcode & VF;
     uint32_t on = 0xFFFFFFFF;
     reg_VF = 0u;
 
-    // Iterative over each pixel
     for (unsigned int row = 0u; row < height; row++) {
         // Get sprite from memory
         uint8_t nth_spriteByte = m_memory[m_indexRegister + row];
 
         // Iterating over each pixel in current row
         for (unsigned int pixel = 0u; pixel < 8u; pixel++) {
-            // Get current screen pixel
-            uint32_t* screenPixel = &m_graphics[(y + row) * video::WIDTH + (x + pixel)];
-
-            // Get current sprite pixel
+            uint32_t* screenPixel = &m_graphics[(y + row) * WIDTH + (x + pixel)];
             uint8_t spritePixel = nth_spriteByte & (0x80u >> pixel);
 
             // Sprite pixel is on
@@ -497,22 +468,19 @@ void interpreter_8::Chip8::op_Dxyn() {
 }
 
 void interpreter_8::Chip8::op_Ex9E() {
-    // If the value of key is currently pressed, skip next instruction
     if (m_keypad[reg_Vx]) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_ExA1() {
-    // If the value of key is not currently pressed, skip current instruction
     if (!m_keypad[reg_Vx]) m_programCounter += 2;
 }
 
 void interpreter_8::Chip8::op_Fx07() {
-    reg_Vx = m_delayTimer; // Store the value of the delay timer in Vx
+    reg_Vx = m_delayTimer;
 }
 
 void interpreter_8::Chip8::op_Fx0A() {
-    // Store the value of the keypress in Vx if keypress is detected. If a keypress is not detected, 
-    // decrement program counter by 2 since each execution loop increments the program counter by 2.
+    // If keypress not detected, decrement program counter since it's incremented in each execution loop.
     m_keypad[0]  ? reg_Vx = 0  :
     m_keypad[1]  ? reg_Vx = 1  :
     m_keypad[2]  ? reg_Vx = 2  :
@@ -533,23 +501,21 @@ void interpreter_8::Chip8::op_Fx0A() {
 }
 
 void interpreter_8::Chip8::op_Fx15() {
-    m_delayTimer = reg_Vx; // Set delay timer is equal to the value of Vx
+    m_delayTimer = reg_Vx;
 }
 
 void interpreter_8::Chip8::op_Fx18() {
-    m_soundTimer = reg_Vx; // Set sound timer is equal to the value of Vx
+    m_soundTimer = reg_Vx;
 }
 
 void interpreter_8::Chip8::op_Fx1E() {
-    m_indexRegister += reg_Vx; // Add the value of Vx to the index register
+    m_indexRegister += reg_Vx;
 }
 
 void interpreter_8::Chip8::op_Fx29() {
-    uint8_t digit = reg_Vx;
-
     // Since the font character is located at 0x50 and is five bytes the value of I is set to the location 
     // for the hexadecimal sprite corresponding to the value of Vx by taking an offset from the start address
-    m_indexRegister = address::FONT_START + (font::OFFSET * digit);
+    m_indexRegister = FONT_START + (OFFSET * reg_Vx);
 }
 
 void interpreter_8::Chip8::op_Fx33() {
@@ -570,14 +536,12 @@ void interpreter_8::Chip8::op_Fx33() {
 }
 
 void interpreter_8::Chip8::op_Fx55() {
-    // Copy the values of registers V0 through Vx into memory starting at index register
     for (uint8_t i = 0; i <= Vx; i++) {
         m_memory[m_indexRegister + i] = m_registers[i];
     }
 }
 
 void interpreter_8::Chip8::op_Fx65() {
-    // Read the values from memory starting at index register in registers V0 through Vx
     for (uint8_t i = 0; i <= Vx; i++) {
         m_registers[i] = m_memory[m_indexRegister + i];
     }

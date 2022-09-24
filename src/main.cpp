@@ -25,7 +25,7 @@ std::vector<std::string> argparse(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
     std::vector<std::string> args = argparse(argc, argv);
-    unsigned delay = 1;
+    unsigned delay = 3;
 
     // Create interpreter and RUN RUN RUN RUN RUN!!!!!!!!!!!
     interpreter_8::Interpreter chip8_interpreter(args[0].c_str(), args[1].c_str(), delay, std::stoi(args[2]));

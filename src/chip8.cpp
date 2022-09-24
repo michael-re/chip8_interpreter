@@ -21,7 +21,8 @@
 #define reg_VF m_registers[VF]
 
 interpreter_8::Chip8::Chip8() :
-    m_randomEngine(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()))
+    m_randomEngine(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count())),
+    randomByte(std::uniform_int_distribution<uint8_t>(0u, 255u))
 { }
 
 bool interpreter_8::Chip8::Init() {
@@ -436,8 +437,7 @@ void interpreter_8::Chip8::op_Bnnn() {
 }
 
 void interpreter_8::Chip8::op_Cxkk() {
-    auto randomByte = std::bind(std::uniform_int_distribution<unsigned int>(0u, 255u), m_randomEngine);
-    reg_Vx = randomByte() & byte_kk;
+    reg_Vx = randomByte(m_randomEngine) & byte_kk;
 }
 
 void interpreter_8::Chip8::op_Dxyn() {

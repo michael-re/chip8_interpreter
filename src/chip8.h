@@ -12,7 +12,7 @@ namespace interpreter_8 {
     private:
         enum font  : unsigned int { SIZE = 80u, OFFSET = 5u };
         enum size  : unsigned int { STACK = 16u, KEYPAD = 16u, REGISTER = 16u, MEMORY = 4096u };
-        enum value : unsigned int { VF = 0x0Fu, DEFAULT = 0x00u, START = 0x200u, FONT_START = 0x050u };
+        enum value : unsigned int { VF = 0x0Fu, DEFAULT = 0u, START = 0x200u, FONT_START = 0x050u };
     
         /**
          * @brief Fontset will occupy addresses in memory from 0x0050u to 0x00A0u (but anywhere in the first 512 bytes is fine).
@@ -166,6 +166,7 @@ namespace interpreter_8 {
          * C++'s STL default random engine - mt19937 - to generate sudo random number and bind to the values to a byte range.
          */
         std::default_random_engine m_randomEngine;
+        std::uniform_int_distribution<uint8_t> randomByte;
 
     public:
         explicit Chip8();

@@ -11,12 +11,11 @@ namespace interpreter_8 {
         int m_cycleDelay;
         int m_videoPitch;
 
-        Chip8* m_chip8;
-        Graphics* m_window;
+        Chip8 m_chip8;
+        Graphics m_window;
 
     public:
         Interpreter(const char* title, const char* rom, int delay, int scale);
-        ~Interpreter();
         void Run();
     };
 }

@@ -10,9 +10,9 @@ namespace interpreter_8 {
         enum video : unsigned int { WIDTH = 64u, HEIGHT = 32u, RESOLUTION = WIDTH * HEIGHT };
 
     private:
-        enum font  : unsigned int { SIZE = 80u, OFFSET = 5u };
-        enum size  : unsigned int { STACK = 16u, KEYPAD = 16u, REGISTER = 16u, MEMORY = 4096u };
-        enum value : unsigned int { VF = 0x0Fu, DEFAULT = 0u, START = 0x200u, FONT_START = 0x050u };
+        enum font    : unsigned int { SIZE  = 80u,  OFFSET  = 5u                                           };
+        enum size    : unsigned int { STACK = 16u,  KEYPAD  = 16u, REGISTER = 16u,    MEMORY     = 4096u   };
+        enum address : unsigned int { VF    = 0xFu, DEFAULT = 0u,   START    = 0x200u, FONT_START = 0x050u };
     
         /**
          * @brief Fontset will occupy addresses in memory from 0x0050u to 0x00A0u (but anywhere in the first 512 bytes is fine).

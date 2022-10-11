@@ -1,6 +1,6 @@
 #include "chip8.h"
 
-// #include <format> // uncomment for debug dump or if compiling with c++20
+// #include <format> // uncomment for debug dump -- needs to be compiled with c++20 or newer
 #include <chrono>
 #include <cstdint>
 #include <fstream>
@@ -31,11 +31,11 @@ bool interpreter_8::Chip8::Init() {
 
     // Initialize key components 
     m_programCounter = START;
-    m_indexRegister = DEFAULT;
-    m_stackPointer = DEFAULT;
-    m_delayTimer = DEFAULT;
-    m_soundTimer = DEFAULT;
-    m_opcode = DEFAULT;
+    m_indexRegister  = DEFAULT;
+    m_stackPointer   = DEFAULT;
+    m_delayTimer     = DEFAULT;
+    m_soundTimer     = DEFAULT;
+    m_opcode         = DEFAULT;
 
     // Clear memory, keypad, graphics, and program stack
     std::fill_n(m_memory, MEMORY, DEFAULT);
